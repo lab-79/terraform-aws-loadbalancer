@@ -8,7 +8,7 @@ locals {
 data "aws_region" "current" {}
 
 resource "aws_lb" "main" {
-  count = "${var.access_logs_bucket == "" ? 1 : 0}"
+  count = "${var.create * (var.access_logs_bucket == "" ? 1 : 0)}"
 
   name               = "${local.name_prefix}"
   load_balancer_type = "${var.type}"
@@ -21,7 +21,7 @@ resource "aws_lb" "main" {
 }
 
 resource "aws_lb" "main_with_access_logs" {
-  count              = "${var.access_logs_bucket == "" ? 0 : 1}"
+  count              = "${var.create * (var.access_logs_bucket == "" ? 0 : 1)}"
   name               = "${local.name_prefix}"
   load_balancer_type = "${var.type}"
   internal           = "${var.internal}"
@@ -39,7 +39,7 @@ resource "aws_lb" "main_with_access_logs" {
 }
 
 resource "aws_security_group" "main" {
-  count       = "${var.type == "network" ? 0 : 1}"
+  count       = "${var.create * (var.type == "network" ? 0 : 1)}"
   name        = "${local.name_prefix}-sg"
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
@@ -48,7 +48,7 @@ resource "aws_security_group" "main" {
 }
 
 resource "aws_security_group_rule" "egress" {
-  count             = "${var.type == "network" ? 0 : 1}"
+  count             = "${var.create * (var.type == "network" ? 0 : 1)}"
   security_group_id = "${aws_security_group.main.id}"
   type              = "egress"
   protocol          = "-1"
@@ -60,7 +60,7 @@ resource "aws_security_group_rule" "egress" {
 
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${coalesce(join("",aws_lb.main.*.name), join("", aws_lb.main_with_access_logs.*.name))}"
-  count          = "${var.add_cloudwatch_dashboard == "true" ? 1:0}"
+  count          = "${var.create * (var.add_cloudwatch_dashboard == "true" ? 1:0)}"
 
   dashboard_body = <<EOF
   {
